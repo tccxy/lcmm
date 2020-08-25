@@ -1,0 +1,21 @@
+char default_config[] =\
+" \
+    {\
+        \"channle\":[\
+            {\
+                \"channle_name\":\"VEHICLE_STATUS\",\
+                \"work_mode\":\"MONITOR_MODE\",\
+                \"low_limit\":15,\
+                \"high_limit\":25,\
+                \"log_num\":1000\
+            },\
+            {\
+                \"channle_name\":\"SPEED_CMD\",\
+                \"work_mode\":\"LOG_MODE\",\
+                \"low_limit\":15,\
+                \"high_limit\":25,\
+                \"log_num\":1000\
+            }\
+        ]\
+    }\
+";
