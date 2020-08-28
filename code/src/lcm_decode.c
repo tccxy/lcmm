@@ -11,7 +11,6 @@
 
 #include "pub.h"
 
-
 /**
  * @brief Get the full time object
  * 
@@ -100,10 +99,11 @@ u32 get_full_time(struct write_structure *w_stru)
  * @param w_stru 
  * @return u32 
  */
-u32 get_relatively_time(struct write_structure *w_stru)
+u32 get_relatively_time(struct write_structure *w_stru, void *addr)
 {
     struct timeval tv;
     struct timeval tv_pre;
+    struct sockaddr_in *c_addr = (struct sockaddr_in *)addr;
 
     DEBUG("get_relatively_time .\r\n");
     tv_pre = w_stru->pretime; //旧的时间
@@ -113,9 +113,10 @@ u32 get_relatively_time(struct write_structure *w_stru)
     w_stru->pretime = tv;
     DEBUG("get_relatively_time tv sec %ld usec %ld \r\n", tv.tv_sec, tv.tv_usec);
     float time_val = (tv.tv_sec - tv_pre.tv_sec) * 1000000 + tv.tv_usec - tv_pre.tv_usec;
-    time_val = time_val / 1000;
+    time_val = time_val / 1000.0;
     w_stru->w_buf[w_stru->buf_num].time_interval = time_val;
-    sprintf((char *)(w_stru->w_buf[w_stru->buf_num].buf), "%6.3f ms\n", time_val);
+    //sprintf((char *)(w_stru->w_buf[w_stru->buf_num].buf), "%6.3f ms\n", time_val);
+    sprintf((char *)(w_stru->w_buf[w_stru->buf_num].buf), "%s ", inet_ntoa(c_addr->sin_addr));
     return SUCCESS;
 }
 
@@ -174,6 +175,11 @@ void write_log_to_file(struct write_structure *w_stru, struct lcmm_channel *chan
 {
     FILE *fp;
     size_t len;
+    char msg[DEFAULT_LEN] = {0};
+
+    if (w_stru->w_buf[w_stru->buf_num].time_interval < 0.001)
+        return;
+
     if (w_stru->buf_num >= channle->log_num)
     {
         fp = fopen((char *)w_stru->file_path_name, "a+");
@@ -184,9 +190,11 @@ void write_log_to_file(struct write_structure *w_stru, struct lcmm_channel *chan
         }
         for (u32 loop = 0; loop <= w_stru->buf_num; loop++)
         {
-            len = fwrite(w_stru->w_buf[loop].buf, sizeof(u8),
-                         strlen((char *)w_stru->w_buf[loop].buf), fp);
-            if (len != strlen((char *)w_stru->w_buf[loop].buf))
+            memset(msg, 0, sizeof(msg));
+            sprintf(msg, "time %6.3f ms from %s \n", w_stru->w_buf[loop].time_interval, w_stru->w_buf[loop].buf);
+            len = fwrite(msg, sizeof(u8),
+                         strlen((char *)msg), fp);
+            if (len != strlen((char *)msg))
             {
                 printf("Fail to write\n");
                 fclose(fp);
@@ -216,9 +224,12 @@ void write_monitor_to_file(struct write_structure *w_stru, struct lcmm_channel *
 {
     FILE *fp;
     size_t len;
-
+    char ip_msg[20] = {0};
     float abnormal_time_interval = 0;
     char msg[DEFAULT_LEN] = {0};
+
+    if (w_stru->w_buf[w_stru->buf_num].time_interval < 0.001)
+        return;
 
     w_stru->total_item++;
     //异常发生
@@ -230,11 +241,12 @@ void write_monitor_to_file(struct write_structure *w_stru, struct lcmm_channel *
 
         //记录本次错误的时间间隔
         abnormal_time_interval = w_stru->w_buf[w_stru->buf_num].time_interval;
+        memcpy(ip_msg,(char *)(w_stru->w_buf[w_stru->buf_num].buf),strlen((char *)(w_stru->w_buf[w_stru->buf_num].buf)));
         get_full_time(w_stru); //转换绝对时间
         //去掉/n符
         strncpy(msg, (char *)(w_stru->w_buf[w_stru->buf_num].buf),
                 strlen((char *)(w_stru->w_buf[w_stru->buf_num].buf)) - 1);
-        sprintf(msg, "%s %s %6.3f ms\n", msg, "<--->", abnormal_time_interval);
+        sprintf(msg, "%s %s %6.3f ms from %s \n", msg, "<--->", abnormal_time_interval,ip_msg);
         DEBUG("msg %s \r\n", msg);
 
         //记录文件，尾部插入异常
@@ -314,7 +326,7 @@ void write_monitor_to_file(struct write_structure *w_stru, struct lcmm_channel *
  * 
  * @param w_stru 
  */
-void write_to_msg(struct write_structure *w_stru, struct lcmm_channel *channle)
+void write_to_msg(struct write_structure *w_stru, struct lcmm_channel *channle, void *addr)
 {
     struct timeval tv;
     FILE *fp = NULL;
@@ -367,7 +379,7 @@ void write_to_msg(struct write_structure *w_stru, struct lcmm_channel *channle)
     }
     else
     {
-        get_relatively_time(w_stru);
+        get_relatively_time(w_stru, addr);
     }
     if (channle->worke_mode == LOG_MODE)
         write_log_to_file(w_stru, channle);

@@ -356,8 +356,8 @@ void udp_init()
     s32 ret;
     u32 len;
     u8 loop = 0;
-    struct sockaddr_in sender;
-    socklen_t sender_len = sizeof(sender);
+    struct sockaddr_in client = {0};
+    u32 client_address_size = (sizeof(client));
     struct sockaddr_in serveraddr;
     struct ip_mreqn ngroup = {0};
     struct ip_mreq group = {0};
@@ -434,7 +434,7 @@ void udp_init()
     {
         DEBUG("will recv \r\n");
         write_p = (struct write_structure *)global_write_structure;
-        len = recvfrom(sockfd, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&sender, &sender_len);
+        len = recvfrom(sockfd, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&client, &client_address_size);
         DEBUG("recv something len %d \r\n", len);
 
         for (loop = 0; loop < g_ctrl.channel_num; loop++, write_p++)
@@ -442,7 +442,7 @@ void udp_init()
             ret = check_lcmm_channel(recv_buf, g_ctrl.channel[loop].name);
             if (SUCCESS == ret)
             {
-                write_to_msg(write_p, &g_ctrl.channel[loop]);
+                write_to_msg(write_p, &g_ctrl.channel[loop],&client);
             }
             DEBUG("write success \r\n");
         }
@@ -475,11 +475,11 @@ int main(int argc, char *argv[])
 
     while ((opt = getopt_long_only(argc, argv, string, long_options, &option_index)) != -1)
     {
-        printf("opt = %c\t\t", opt);
-        printf("optarg = %s\t\t", optarg);
-        printf("optind = %d\t\t", optind);
-        printf("argv[optind] =%s\t\t", argv[optind]);
-        printf("option_index = %d\n", option_index);
+        //printf("opt = %c\t\t", opt);
+        //printf("optarg = %s\t\t", optarg);
+        //printf("optind = %d\t\t", optind);
+        //printf("argv[optind] =%s\t\t", argv[optind]);
+        //printf("option_index = %d\n", option_index);
         switch (opt)
         {
         case 'l':

@@ -35,7 +35,7 @@
 #define MAGIC3 0x30
 #define MAGIC4 0x32
 
-#define LOG_MODE 1 //逐条记录
+#define LOG_MODE 1     //逐条记录
 #define MONITOR_MODE 2 //异常记录
 /**
  * @brief lcm的通道名字
@@ -85,6 +85,6 @@ struct write_structure
 u32 lcm_write(void *file_path, void *data);
 u32 get_full_time(struct write_structure *w_stru);
 u32 check_lcmm_channel(void *data, void *channel_name);
-void write_to_msg(struct write_structure *w_stru, struct lcmm_channel *channle);
+void write_to_msg(struct write_structure *w_stru, struct lcmm_channel *channle, void *addr);
 
 #endif
